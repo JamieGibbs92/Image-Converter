@@ -88,25 +88,40 @@ class Application(Frame):
                ).grid(row = 7, column = 6, sticky = E, pady = 5)
         
     def previewImage(self):
+        """Opens the selected image in new window for user to preview it"""
         self.results.insert(END,"\nPreviewing image...")
         # Create secondary window for image preview
         imgPreviewWindow = Toplevel()
         imgPreviewWindow.title("Preview Image")
         imgPreviewWindow.iconbitmap('Image Converter.ico')
+        imgPreviewWindow.maxsize(1024,768)
+        # Prevent user resizing or maximising window
         imgPreviewWindow.resizable(width = False, height = False)
+        # Puts focus on new window, stopping user from interacting with main program until closed
         imgPreviewWindow.grab_set()
+        
         # Create canvas widget to house image in new window
         self.canvas = Canvas(imgPreviewWindow)
         self.canvas.pack()
         # Open and convert image to ensure compatible with canvas
         pilImage = PIL.Image.open(self.fileName)
+        # Resizes the image if required, attempting display it on screen in a presentable manner
+        # Get selected image size
         width = pilImage.width
         height = pilImage.height
-        if width > 600 or height > 600:
-            width = pilImage.width / 2
-            height = pilImage.height / 2
+        
+        maxWidth = 1024
+        maxHeight = 768
+    
+        if width < 1024 or height < 768:
+            pass
+        else:
+            width = maxWidth
+            height = maxHeight
         pilImage = pilImage.resize((int(width), int(height)))
+        # Ensures canvas widget is same size as image to be previewed
         self.canvas.configure(width = int(width), height = int(height))
+        # Converts image to suitable format, and adds to canvas to display on screen
         self.photo = ImageTk.PhotoImage(pilImage)
         self.canvas.create_image(0, 0, anchor = NW, image = self.photo)
     
@@ -148,12 +163,13 @@ class Application(Frame):
     
     def getFile(self,dialogTitle, VALIDFILETYPES):
         """Opens the browse file dialog to get a single file from user. Accepts dialog title and browsable file types."""
+        # Set valid states and cursor for other GUI widgets
         self.dirBtn.configure(state = DISABLED, cursor = "arrow")
         self.saveDirBtn2.configure(state = DISABLED)
         self.clearText()
         self.results.insert(END,"Opening file browser...")
-        # Open file browser to locate image to convert
         try:
+            # Open file browser to locate image to convert
             defaultDirectory = os.path.expanduser('~\\Documents')
             self.fileName = filedialog.askopenfilename(initialdir = defaultDirectory,title = dialogTitle, filetypes = VALIDFILETYPES)
             if not self.fileName:
@@ -173,8 +189,8 @@ class Application(Frame):
         self.saveDirBtn1.configure(state = DISABLED)
         self.clearText()
         self.results.insert(END,"Opening directory browser...")
-        # Open directory browser
         try:
+            # Open directory browser
             defaultDirectory = os.path.expanduser('~\\Desktop')
             self.imageDirectory = filedialog.askdirectory(initialdir = defaultDirectory,title = dialogTitle)
             if not self.imageDirectory:
@@ -223,15 +239,22 @@ class Application(Frame):
                         self.results.insert(END,fullPath)
                         image = PIL.Image.open(self.fileName)
                         image.save(fullPath)
+                        self.update()
+                        self.results.see("end")
+                        self.results.insert(END,"\nFile Conversion Complete")
                         messagebox.showinfo(message = "Files Converted Successfully",title = "Image Converter",)
                     else:
                         self.results.insert(END,"\nSkipping file...")
+                        self.results.see("end")
                 else:
                     # Convert and save image into chosen directory
                     self.results.insert(END,"\nConverting file...")
                     self.results.insert(END,fullPath)
                     image = PIL.Image.open(self.fileName)
                     image.save(fullPath)
+                    self.update()
+                    self.results.insert(END,"\nFile Conversion Complete")
+                    self.results.see("end")
                     messagebox.showinfo(message = "Files Converted Successfully",title = "Image Converter",)
             except:
                 self.results.insert(END,"\nSomething went wrong. Please try again")
@@ -239,6 +262,10 @@ class Application(Frame):
 
     def convertFileInDir(self, fileType):
         try:
+            # Create temporary text label to inform user that files are being converted
+            self.convertingLabel = Label (self, text = "Converting Files...",font = "Helvetica 8 bold")
+            self.convertingLabel.grid(row = 7, column = 2)
+            self.results.insert(END,"\nConverting files in directory...")
             for imageFile in os.listdir(self.imageDirectory):
                     if imageFile.endswith(('.jpg', '.bmp','png','ico')):
                         fullPath = self.imageDirectory + "/" + imageFile
@@ -251,18 +278,26 @@ class Application(Frame):
                             result = messagebox.askyesno("Image Converter",splitImageExt[0] + fileType + "\nalready exists. Overwrite?")
                             if result == True:
                                 # Convert and save image into chosen directory
-                                self.results.insert(END,"\nConverting file...\n")
-                                self.results.insert(END,fullPath)
+                                self.results.insert(END,"\nConverting file...")
+                                self.results.insert(END,"\n" + fullPath+"\n")
                                 image = PIL.Image.open(fullPath)
                                 image.save(fullSavePath)
+                                self.results.see("end")
                             else:
                                 self.results.insert(END,"\nSkipping file...")
+                                self.results.see("end")
+                            self.update()
                         else:
                             # Convert and save image into chosen directory
-                            self.results.insert(END,fullSavePath + "\n")
+                            self.results.insert(END,"\n" + fullSavePath + "\n")
                             image = PIL.Image.open(fullPath)
                             image.save(fullSavePath)
+                            self.results.see("end")
+                            self.update()
+            self.results.insert(END,"\nFile Conversion Complete")
+            self.results.see("end")
             messagebox.showinfo(message = "Files Converted Successfully",title = "Image Converter")
+            self.convertingLabel.grid_forget()
         except:
             self.results.insert(END,"\nSomething went wrong. Please try again")
 
