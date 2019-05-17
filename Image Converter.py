@@ -238,7 +238,10 @@ class Application(Frame):
                         self.results.insert(END,"\nConverting file...\n")
                         self.results.insert(END,fullPath)
                         image = PIL.Image.open(self.fileName)
-                        image.save(fullPath)
+                        # Ensure that if file is a PNG, it is converted to standard RGB information, without an alpha channel before conversion
+                        if splitImage[1] == ".PNG":
+                            image = image.convert("RGB")
+                            image.save(fullPath)
                         self.update()
                         self.results.see("end")
                         self.results.insert(END,"\nFile Conversion Complete")
